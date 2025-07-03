@@ -23,17 +23,17 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Whiteboar
   useUnifiedTopology: true,
 });
 
-const roomRoutes = require('./routes/rooms');
+const roomRoutes = require('./server/routes/rooms');
 app.use('/api/rooms', roomRoutes);
 
-const socketHandler = require('./socket/socketHandler');
+const socketHandler = require('./server/socket/socketHandler');
 socketHandler(io);
 
 // ---------- Serve React build ----------
-app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
+app.use(express.static(path.join(__dirname, 'client', 'build')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
