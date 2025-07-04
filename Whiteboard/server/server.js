@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // DB connection
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
