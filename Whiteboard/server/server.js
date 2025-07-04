@@ -10,16 +10,15 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*", // during local dev
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// DB Connection
+// DB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Whiteboard', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -33,11 +32,11 @@ app.use('/api/rooms', roomRoutes);
 const socketHandler = require('./socket/socketHandler');
 socketHandler(io);
 
-// Serve frontend build (React)
-app.use(express.static(path.join(__dirname, '../client/build')));
+// Serve frontend build
+app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Start server
