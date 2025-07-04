@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install": "cd client && npm install && cd ../server && npm install",
-    "build": "cd client && npm install && npm run build",
-    "start": "cd server && npm install && node server.js"
+    "heroku-postbuild": "cd client && npm install && npm run build",
+     "start": "cd server && npm install && npm start"
   },
   "engines": {
     "node": ">=16"
