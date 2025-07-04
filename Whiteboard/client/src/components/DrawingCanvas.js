@@ -3,20 +3,34 @@ import React, { useRef, useEffect, useState } from 'react';
 const DrawingCanvas = ({ socket, drawingSettings }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [lastPos, setLastPos] = useState(null);
+  const ctxRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
     canvas.width = 800;
     canvas.height = 600;
+    const ctx = canvas.getContext('2d');
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctxRef.current = ctx;
 
     if (!socket) return;
 
-    socket.on('draw', ({ from, to, color, strokeWidth }) => {
-      drawLine(ctx, from, to, color, strokeWidth);
+    // 🟢 Add these listeners for remote users
+    socket.on('draw-start', (data) => {
+      ctx.beginPath();
+      ctx.moveTo(data.x, data.y);
+    });
+
+    socket.on('draw-move', (data) => {
+      ctx.lineTo(data.x, data.y);
+      ctx.strokeStyle = data.color;
+      ctx.lineWidth = data.strokeWidth;
+      ctx.stroke();
+    });
+
+    socket.on('draw-end', () => {
+      ctx.closePath();
     });
 
     socket.on('clear-canvas', () => {
@@ -24,19 +38,12 @@ const DrawingCanvas = ({ socket, drawingSettings }) => {
     });
 
     return () => {
-      socket.off('draw');
+      socket.off('draw-start');
+      socket.off('draw-move');
+      socket.off('draw-end');
       socket.off('clear-canvas');
     };
   }, [socket]);
-
-  const drawLine = (ctx, from, to, color, strokeWidth) => {
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = strokeWidth;
-    ctx.stroke();
-  };
 
   const getMousePos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -47,30 +54,41 @@ const DrawingCanvas = ({ socket, drawingSettings }) => {
   };
 
   const handleMouseDown = (e) => {
+    const pos = getMousePos(e);
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(pos.x, pos.y);
     setIsDrawing(true);
-    setLastPos(getMousePos(e));
+
+    socket.emit('draw-start', {
+      x: pos.x,
+      y: pos.y,
+      color: drawingSettings.color,
+      strokeWidth: drawingSettings.strokeWidth,
+    });
   };
 
   const handleMouseMove = (e) => {
     if (!isDrawing) return;
-    const newPos = getMousePos(e);
-    const ctx = canvasRef.current.getContext('2d');
-    drawLine(ctx, lastPos, newPos, drawingSettings.color, drawingSettings.strokeWidth);
+    const pos = getMousePos(e);
+    ctxRef.current.lineTo(pos.x, pos.y);
+    ctxRef.current.strokeStyle = drawingSettings.color;
+    ctxRef.current.lineWidth = drawingSettings.strokeWidth;
+    ctxRef.current.stroke();
 
-    if (socket) {
-      socket.emit('draw', {
-        from: lastPos,
-        to: newPos,
-        color: drawingSettings.color,
-        strokeWidth: drawingSettings.strokeWidth,
-      });
-    }
-    setLastPos(newPos);
+    socket.emit('draw-move', {
+      x: pos.x,
+      y: pos.y,
+      color: drawingSettings.color,
+      strokeWidth: drawingSettings.strokeWidth,
+    });
   };
 
   const handleMouseUp = () => {
+    if (!isDrawing) return;
+    ctxRef.current.closePath();
     setIsDrawing(false);
-    setLastPos(null);
+
+    socket.emit('draw-end');
   };
 
   return (
