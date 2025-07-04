@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DrawingCanvas from './DrawingCanvas';
 import Toolbar from './Toolbar';
 import UserCursors from './UserCursors';
+
 const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
   const [userCount, setUserCount] = useState(0);
   const [cursors, setCursors] = useState({});
@@ -10,29 +11,51 @@ const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
     strokeWidth: 2
   });
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !roomId) return;
+    socket.emit('join-room', roomId);
     socket.on('user-count', (count) => {
       setUserCount(count);
     });
     socket.on('cursor-move', (data) => {
-      setCursors(prev => ({
+      setCursors((prev) => ({
         ...prev,
         [data.userId]: { x: data.x, y: data.y }
       }));
     });
     socket.on('cursor-remove', (userId) => {
-      setCursors(prev => {
+      setCursors((prev) => {
         const newCursors = { ...prev };
         delete newCursors[userId];
         return newCursors;
       });
     });
+    socket.on('draw-start', (data) => {
+      window.dispatchEvent(new CustomEvent('remote-draw-start', { detail: data }));
+    });
+
+    socket.on('draw-move', (data) => {
+      window.dispatchEvent(new CustomEvent('remote-draw-move', { detail: data }));
+    });
+
+    socket.on('draw-end', (data) => {
+      window.dispatchEvent(new CustomEvent('remote-draw-end', { detail: data }));
+    });
+
+    socket.on('clear-canvas', () => {
+      window.dispatchEvent(new Event('remote-clear-canvas'));
+    });
+
     return () => {
       socket.off('user-count');
       socket.off('cursor-move');
       socket.off('cursor-remove');
+      socket.off('draw-start');
+      socket.off('draw-move');
+      socket.off('draw-end');
+      socket.off('clear-canvas');
     };
-  }, [socket]);
+  }, [socket, roomId]);
+
   const handleMouseMove = (e) => {
     if (!socket) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -40,11 +63,13 @@ const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
     const y = e.clientY - rect.top;
     socket.emit('cursor-move', { x, y });
   };
+
   const handleClearCanvas = () => {
     if (socket) {
       socket.emit('clear-canvas');
     }
   };
+
   return (
     <div className="whiteboard">
       <div className="whiteboard-header">
