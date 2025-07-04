@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // DB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://adarshsingh8853757189:Abbi7007@whiteboard.1tefyov.mongodb.net/Whiteboard?retryWrites=true&w=majority&appName=Whiteboard', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
