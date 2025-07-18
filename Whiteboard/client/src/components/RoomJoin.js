@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+
 const RoomJoin = ({ onJoinRoom }) => {
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
+
   const generateRoomCode = () => {
     const code = Math.random().toString(36).substr(2, 7).toUpperCase();
     setRoomCode(code);
@@ -12,13 +14,17 @@ const RoomJoin = ({ onJoinRoom }) => {
     e.preventDefault();
     if (!roomCode.trim()) return;
     setLoading(true);
+
     try {
       const response = await axios.post('/api/rooms/join', {
         roomId: roomCode.trim().toUpperCase()
       });
-      
+
       if (response.data.success) {
-       onJoinRoom({ roomId: response.data.roomId, drawingData: response.data.drawingData });
+        onJoinRoom({
+          roomId: response.data.roomId,
+          drawingData: response.data.drawingData || [] // ✅ SEND drawingData
+        });
       }
     } catch (error) {
       console.error('Error joining room:', error);
@@ -27,6 +33,7 @@ const RoomJoin = ({ onJoinRoom }) => {
       setLoading(false);
     }
   };
+
   return (
     <div className="room-join">
       <div className="room-join-card">

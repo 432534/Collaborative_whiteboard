@@ -7,42 +7,34 @@ import './App.css';
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomId, setRoomId] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
   const [drawingData, setDrawingData] = useState([]);
 
-  const [isConnected, setIsConnected] = useState(false);
-
   useEffect(() => {
-    const newSocket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
+    const newSocket = io();
     setSocket(newSocket);
 
-    newSocket.on('connect', () => {
-      setIsConnected(true);
-    });
-
-    newSocket.on('disconnect', () => {
-      setIsConnected(false);
-    });
+    newSocket.on('connect', () => setIsConnected(true));
+    newSocket.on('disconnect', () => setIsConnected(false));
 
     return () => {
       newSocket.close();
     };
   }, []);
 
-const handleJoinRoom = ({ roomId, drawingData }) => {
-  setRoomId(roomId);
-  setDrawingData(drawingData);
-  if (socket) {
-    socket.emit('join-room', roomId);
-  }
-};
-
+  const handleJoinRoom = ({ roomId, drawingData }) => {
+    setRoomId(roomId);
+    setDrawingData(drawingData || []);
+    if (socket) {
+      socket.emit('join-room', roomId);
+    }
+  };
 
   const handleLeaveRoom = () => {
     setRoomId('');
+    setDrawingData([]);
     if (socket) {
-      socket.emit('leave-room'); // optional (agar server pe handle nahi ho raha, toh hata bhi sakte ho)
+      socket.emit('leave-room');
     }
   };
 
@@ -54,14 +46,15 @@ const handleJoinRoom = ({ roomId, drawingData }) => {
           {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
         </div>
       </header>
-      
+
       {!roomId ? (
         <RoomJoin onJoinRoom={handleJoinRoom} />
       ) : (
-        <WhiteBoard 
-          socket={socket} 
-          roomId={roomId} 
+        <WhiteBoard
+          socket={socket}
+          roomId={roomId}
           onLeaveRoom={handleLeaveRoom}
+          drawingData={drawingData}
         />
       )}
     </div>
