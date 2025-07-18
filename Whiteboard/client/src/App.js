@@ -7,6 +7,8 @@ import './App.css';
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomId, setRoomId] = useState('');
+  const [drawingData, setDrawingData] = useState([]);
+
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -28,12 +30,14 @@ function App() {
     };
   }, []);
 
-  const handleJoinRoom = (room) => {
-    setRoomId(room);
-    if (socket) {
-      socket.emit('join-room', room);
-    }
-  };
+const handleJoinRoom = ({ roomId, drawingData }) => {
+  setRoomId(roomId);
+  setDrawingData(drawingData);
+  if (socket) {
+    socket.emit('join-room', roomId);
+  }
+};
+
 
   const handleLeaveRoom = () => {
     setRoomId('');

@@ -18,7 +18,7 @@ const RoomJoin = ({ onJoinRoom }) => {
       });
       
       if (response.data.success) {
-        onJoinRoom(response.data.roomId);
+       onJoinRoom({ roomId: response.data.roomId, drawingData: response.data.drawingData });
       }
     } catch (error) {
       console.error('Error joining room:', error);

@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-const DrawingCanvas = ({ socket, drawingSettings }) => {
+const DrawingCanvas = ({ socket, drawingSettings, drawingData }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const ctxRef = useRef(null);
 
+  // Initial canvas setup and socket listeners
   useEffect(() => {
     const canvas = canvasRef.current;
     canvas.width = 800;
@@ -16,7 +17,6 @@ const DrawingCanvas = ({ socket, drawingSettings }) => {
 
     if (!socket) return;
 
-    // 🟢 Add these listeners for remote users
     socket.on('draw-start', (data) => {
       ctx.beginPath();
       ctx.moveTo(data.x, data.y);
@@ -44,6 +44,27 @@ const DrawingCanvas = ({ socket, drawingSettings }) => {
       socket.off('clear-canvas');
     };
   }, [socket]);
+
+  // Replay drawingData on load
+  useEffect(() => {
+    if (!drawingData || drawingData.length === 0 || !ctxRef.current) return;
+
+    drawingData.forEach((cmd) => {
+      const { type, data } = cmd;
+
+      if (type === 'draw-start') {
+        ctxRef.current.beginPath();
+        ctxRef.current.moveTo(data.x, data.y);
+      } else if (type === 'draw-move') {
+        ctxRef.current.lineTo(data.x, data.y);
+        ctxRef.current.strokeStyle = data.color;
+        ctxRef.current.lineWidth = data.strokeWidth;
+        ctxRef.current.stroke();
+      } else if (type === 'draw-end') {
+        ctxRef.current.closePath();
+      }
+    });
+  }, [drawingData]);
 
   const getMousePos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();

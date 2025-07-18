@@ -1,58 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import DrawingCanvas from './DrawingCanvas';
-import Toolbar from './Toolbar';
-import UserCursors from './UserCursors';
+import React, { useState, useEffect } from "react";
+import DrawingCanvas from "./DrawingCanvas";
+import Toolbar from "./Toolbar";
+import UserCursors from "./UserCursors";
 
-const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
+const Whiteboard = ({ socket, roomId, onLeaveRoom, drawingData }) => {
   const [userCount, setUserCount] = useState(0);
   const [cursors, setCursors] = useState({});
   const [drawingSettings, setDrawingSettings] = useState({
-    color: '#000000',
-    strokeWidth: 2
+    color: "#000000",
+    strokeWidth: 2,
   });
   useEffect(() => {
     if (!socket || !roomId) return;
-    socket.emit('join-room', roomId);
-    socket.on('user-count', (count) => {
+    socket.emit("join-room", roomId);
+    socket.on("user-count", (count) => {
       setUserCount(count);
     });
-    socket.on('cursor-move', (data) => {
+    socket.on("cursor-move", (data) => {
       setCursors((prev) => ({
         ...prev,
-        [data.userId]: { x: data.x, y: data.y }
+        [data.userId]: { x: data.x, y: data.y },
       }));
     });
-    socket.on('cursor-remove', (userId) => {
+    socket.on("cursor-remove", (userId) => {
       setCursors((prev) => {
         const newCursors = { ...prev };
         delete newCursors[userId];
         return newCursors;
       });
     });
-    socket.on('draw-start', (data) => {
-      window.dispatchEvent(new CustomEvent('remote-draw-start', { detail: data }));
+    socket.on("draw-start", (data) => {
+      window.dispatchEvent(
+        new CustomEvent("remote-draw-start", { detail: data })
+      );
     });
 
-    socket.on('draw-move', (data) => {
-      window.dispatchEvent(new CustomEvent('remote-draw-move', { detail: data }));
+    socket.on("draw-move", (data) => {
+      window.dispatchEvent(
+        new CustomEvent("remote-draw-move", { detail: data })
+      );
     });
 
-    socket.on('draw-end', (data) => {
-      window.dispatchEvent(new CustomEvent('remote-draw-end', { detail: data }));
+    socket.on("draw-end", (data) => {
+      window.dispatchEvent(
+        new CustomEvent("remote-draw-end", { detail: data })
+      );
     });
 
-    socket.on('clear-canvas', () => {
-      window.dispatchEvent(new Event('remote-clear-canvas'));
+    socket.on("clear-canvas", () => {
+      window.dispatchEvent(new Event("remote-clear-canvas"));
     });
 
     return () => {
-      socket.off('user-count');
-      socket.off('cursor-move');
-      socket.off('cursor-remove');
-      socket.off('draw-start');
-      socket.off('draw-move');
-      socket.off('draw-end');
-      socket.off('clear-canvas');
+      socket.off("user-count");
+      socket.off("cursor-move");
+      socket.off("cursor-remove");
+      socket.off("draw-start");
+      socket.off("draw-move");
+      socket.off("draw-end");
+      socket.off("clear-canvas");
     };
   }, [socket, roomId]);
 
@@ -61,12 +67,12 @@ const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    socket.emit('cursor-move', { x, y });
+    socket.emit("cursor-move", { x, y });
   };
 
   const handleClearCanvas = () => {
     if (socket) {
-      socket.emit('clear-canvas');
+      socket.emit("clear-canvas");
     }
   };
 
@@ -81,15 +87,16 @@ const Whiteboard = ({ socket, roomId, onLeaveRoom }) => {
           Leave Room
         </button>
       </div>
-      <Toolbar 
+      <Toolbar
         drawingSettings={drawingSettings}
         onSettingsChange={setDrawingSettings}
         onClearCanvas={handleClearCanvas}
       />
       <div className="canvas-container" onMouseMove={handleMouseMove}>
-        <DrawingCanvas 
+        <DrawingCanvas
           socket={socket}
           drawingSettings={drawingSettings}
+          drawingData={drawingData}
         />
         <UserCursors cursors={cursors} />
       </div>
